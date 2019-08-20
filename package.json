@@ -4,12 +4,13 @@
   "description": "\u0016\u0016\u0016SQL Library Manager",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
+    "start": "node --inspect app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.19.0",
     "dateformat": "^3.0.3",
     "express": "^4.17.1",
     "pug": "^2.0.4",

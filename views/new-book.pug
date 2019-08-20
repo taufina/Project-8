@@ -1,9 +1,32 @@
-extends layout
+//- extends layout
+
+//- block content
+//-   h1= title
+  
+//-   include errors
+  
+//-   form(action="/books", method="post")
+//-     include form
+extends layout.pug
 
 block content
   h1= title
-  
-  include errors
-  
-  form(action="/books", method="post")
-    include form
+  //-include formErr
+
+  form(action="/books/new", method="post")
+    div
+      label(for='title') Title
+      input#title(name='title', type='text')
+    div
+      label(for='author') Author
+      input#author(name='author', type='text')
+    div
+      label(for='genre') Genre
+      input#genre(name='genre', type='text')
+    div
+      label(for='year') Year
+      input#year(name='year', type='text')
+    div
+      input(type='submit', value='Add New Book')
+    div
+      a.button(href='/') Back

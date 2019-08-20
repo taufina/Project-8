@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       validate:{
         notEmpty:{
-          msg: "Authod is required"
+          msg: "Author is required"
         },
       }
     },
