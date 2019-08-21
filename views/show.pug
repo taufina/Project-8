@@ -2,7 +2,9 @@ extends layout
 
 block content
   h1= book.title
-  include by_line
+  h3= book.author
+  p=book.genre
+  p=book.year
   p= book.body
   a(href="../") &larr; Back
   | | 
