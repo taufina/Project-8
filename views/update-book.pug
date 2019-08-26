@@ -2,7 +2,7 @@ extends layout.pug
 
 block content
     h1 Update Book
-    form(action=`/books/${book.id}`, method='post')
+    form(method='post')
 
         if errors && errors.length
             h2.error ooooooooooooops!!!!!!

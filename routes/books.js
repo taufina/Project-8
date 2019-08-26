@@ -1,45 +1,105 @@
 const express = require('express');
 const router = express.Router(); //setting the router
 const Book = require("../models").Book; //this lets us use book model and all the associated ORM methodd like CRUD records.
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
-/* GET books listing. */
-router.get('/', function(req, res, next) {
-  Book.findAll({order: [["title", "ASC"]]})
-  .then(function(books){
-    res.render("index", {books: books, title: "Nabila's Library" });
-  }).catch(function(err){
-    res.send(500, err);
-    res.render('errors', {err})
-  });
+//Create sequelize instance
+
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: 'library.db'
 });
 
+// router.get('/', function(req, res, next) {
+//   Book.findAll({order: [["title", "ASC"]]}) 
+//   .then(function(books){
+//     res.render("index", {books: books, title: "Nabila's Library" });
+//   }).catch(function(err){
+//     err.statusCode = err.statusCode || 500;
+//     throw err;
+//   });
+// });
+
+/* GET books listing in the home page. */
+
+router.get("/", async (req, res, next) => {
+  try {
+    const booksPerPage = 5;
+    const query = req.query.query ? req.query.query : "";
+    const numPages = await Book.getNumPages(query, booksPerPage);
+    const activePage = req.query.page ? parseInt(req.query.page): (numPages === 0 ? 0: 1);
+    if (activePage > numPages || activePage < 0) {
+      return next();
+    }
+    const books = await Book.findByQueryAndPagination(
+      query,
+      booksPerPage,
+      activePage
+    );
+    res.locals.books = books;
+    res.locals.title = "My Library";
+    res.locals.pages = numPages;
+    res.locals.query = query;
+    res.locals.activePage = activePage;
+    res.render("index");
+  } catch (err) {
+    res.render('not-found');
+
+    return next(err);
+  }
+});
+
+// Search book 
+router.get('/search', (req, res) => {
+  let query = req.query.search.toLowerCase();
+
+  Book.findAll({
+    where: {
+      [Op.or]: [
+        sequelize.where(
+          sequelize.fn('lower', sequelize.col('title')),
+          { [Op.like]: '%' + query + '%' },
+        ),
+        sequelize.where(
+          sequelize.fn('lower', sequelize.col('author')),
+          { [Op.like]: '%' + query + '%' },
+        ),
+        sequelize.where(
+          sequelize.fn('lower', sequelize.col('genre')),
+          { [Op.like]: '%' + query + '%' },
+        ),
+        sequelize.where(
+          sequelize.fn('lower', sequelize.col('year')),
+          { [Op.like]: '%' + query + '%' },
+        )
+      ]
+    }
+  }).then(books => res.render('index', { books }));
+});
 
 /* Create a new book form. */
-router.get('/new', function(req, res, next) {
+router.get('/new', function(req, res) {
   res.render("new-book", {book: Book.build(), title: "New Book"});
 });
 
-/* POST create book. */
+/* Posts a new book to the database */
 router.post('/new', function(req, res, next) {
-  let {title, author, genre, year} = req.body;
   Book.create(req.body).then(function(book){
     res.redirect("/books/" + book.id);
   }).catch(function(err){
     if(err.name === "SequelizeValidationError"){
-      //render
-      res.render("show", {
-        // book: Book.build(req.body), 
-        // title: "Enter a New Book",
+      res.render("new-book", {
+        book: Book.build(req.body), 
+        title: "Enter a New Book",
         errors: err.errors
       });
     } else {
       throw err;
     }
   }).catch(function(err){
-    res.send(500, err);
-    res.render('errors', {err})
+    res.render('error', {message: err.message, error: err});
   });
-  //books.push(book);
 });
 
 /* Delete book form. */
@@ -52,16 +112,28 @@ router.get('/:id/delete', function (req, res, next) {
     }
   }).catch(function(err){
     res.send(500);
-    res.render('errors', {err})
   });
 });
 
 
+// /* Edit book form. */
+router.get('/:id/edit', function (req, res, next) {
+  Book.findByPk(req.params.id).then((book) => {
+    if(book) {
+      res.render('update-book', { book: book, title: 'Edit Book' });
+    } else {
+      res.send(404);
+    }
+  }).catch(function(err){
+    res.send(500);
+  });
+});
 
-// /* PUT update book. */
+
+// /* Post update book. */
 
 // //updating a method is returning a promise passes the next value down the then chain.
-router.post('/:id', function (req, res, next) {
+router.post('/:id/edit', function (req, res, next) {
   Book.findByPk(req.params.id).then((book) => {
     if(book){
       return book.update(req.body);
@@ -85,8 +157,7 @@ router.post('/:id', function (req, res, next) {
       throw err;
     }
   }).catch(function(err){
-    res.send(500);
-    res.render('errors', {err})
+    res.render('error', {err})
 
   });
 });
@@ -98,15 +169,11 @@ router.post('/:id/delete', function (req, res, next) {
       return book.destroy();  //destroy method returns a promise, once the promsie is fulfilled, then we redirect to the books path
     }else {
       res.send(404);
-      res.render('errors', {err})
-
     }
   }).then(() => {
     res.redirect('/books');
   }).catch(function(err){
     res.send(500);
-    res.render('errors', {err})
-
   });
 });
 
@@ -115,29 +182,27 @@ router.post('/:id/delete', function (req, res, next) {
 router.get('/:id', function(req, res, next) {
   Book.findByPk(req.params.id).then((book) => {
     if(book){
-      res.render('show', {book});
+      res.render('show', {book, title: book.title});
     } else {
       res.send(404);
+      console.log("This book does not exist.");
     }
   }).catch(function(err){
-    res.render('errors', {err})
+    res.render('not-found');
     res.send(500);
   });
 });
 
 
-// /* Edit book form. */
-router.get('/:id/edit', function (req, res, next) {
-  Book.findByPk(req.params.id).then((book) => {
-    if(book) {
-      res.render('update-book', { book: book, title: 'Edit Book' });
-    } else {
-      res.render('page-not-found', {err})
-    }
-  }).catch(function(err){
-    res.send(500);
-    res.render('errors', {err})
-  });
-});
+
+  // Book.count().then(c => {
+  //   booksLength = c;
+  // }).then(()=> {
+  //   Book.findAll(paginate(pageNumber, numberOfItems)).then(books=>{
+  //     const numberOfPages = Math.ceil(booksLength/numberOfItems);
+  //     res.render('index', {books, numberOfPages, page});
+  //   });
+  // });
+
 
 module.exports = router;

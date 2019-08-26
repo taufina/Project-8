@@ -4,7 +4,7 @@
   "description": "\u0016\u0016\u0016SQL Library Manager",
   "main": "app.js",
   "scripts": {
-    "start": "node --inspect app.js",
+    "start": "npx nodemon --inspect app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -17,5 +17,8 @@
     "sequelize": "^5.15.0",
     "sequelize-cli": "^5.5.0",
     "sqlite3": "^4.0.9"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.1"
   }
 }

@@ -5,23 +5,12 @@ const routes = require('./routes/index');
 const books = require('./routes/books');
 const app = express();
 
-//const connect = require('connect')
-//const methodOverride = require('method-override')
-//const favicon = require('serve-favicon');
-//const logger = require('morgan');
-//const cookieParser = require('cookie-parser');
-
-// view engine setup
-//app.set('views', path.join(__dirname, 'views'));
+//view engine pug
 app.set('view engine', 'pug');
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-//app.use(methodOverride('_method'));
-//app.use(logger('dev'));
-app.use(bodyParser.json());  // setting up middleware
+app.use(bodyParser.json());  // set up middleware
 app.use(bodyParser.urlencoded({ extended: false }));
-//app.use(cookieParser());
+
 app.use(express.static(path.join(__dirname, 'public'))); //using public folder
 
 app.use('/', routes); // using routes folder
@@ -29,23 +18,18 @@ app.use('/books', books);  // go to books folder
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  const err = new Error('Page not found');
-  err.status = 404;
-  next(err);
+  res.render('not-found');
 });
 
-// error handlers
 
-// development error handler
-// will print stacktrace
+// error handler
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
+    res.locals.message=err.message;
+    res.locals.error=err;
     console.error(err);
-    res.render('error', {
-      message: err.message,
-      error: err
-    });
+    res.render('error');
   });
 }
 

@@ -13,6 +13,12 @@ block content
   h1= title
   //-include formErr
 
+  if errors && errors.length
+    h2.error ooooooooooooops!!!!!!
+      ul.error
+        each error in errors
+          li=error.message
+
   form(action="/books/new", method="post")
     div
       label(for='title') Title
@@ -26,7 +32,9 @@ block content
     div
       label(for='year') Year
       input#year(name='year', type='text')
+    br
     div
       input(type='submit', value='Add New Book')
+    br
     div
       a.button(href='/') Back

@@ -1,6 +1,6 @@
 'use strict';
+const Sequelize = require("sequelize");
 
-//const dateFormat = require('dateformat');
 
 module.exports = (sequelize, DataTypes) => {
   const Book = sequelize.define('Book', {
@@ -27,34 +27,54 @@ module.exports = (sequelize, DataTypes) => {
     // associations can be defined here
   };
 
-  // Book.prototype.publishedAt = function() {
-  //   return dateFormat(this.createdAt, "dddd, mmmm dS, yyyy, h:MM TT");
-  // };
 
-  // Book.prototype.shortDescription = function() { 
-  //   return this.body.length > 30 ? this.body.substr(0, 30) + "..." : this.body;
-  // };
+  // Renders the page with all books found based on the current page and search query
+
+  Book.getNumPages = async function(query, perPage) {
+    try {
+      const Op = Sequelize.Op;
+      const totalRecords = await this.count({
+        where: {
+          [Op.or]: [
+            { title: { [Op.substring]: query } },
+            { genre: { [Op.substring]: query } },
+            { year: { [Op.substring]: query } },
+            { author: { [Op.substring]: query } }
+          ]
+        },
+        order: [["title", "ASC"]]
+      });
+      return Math.ceil(totalRecords / perPage);
+    } catch (err) {
+      throw new Error("Error getting pages");
+    }
+  };
+
+//returns all records based on query, pagination, and books per page
+  Book.findByQueryAndPagination = async function(
+    query,
+    booksPerPage,
+    currentPage
+  ) {
+    try {
+      const Op = Sequelize.Op;
+      return await this.findAll({
+        where: {
+          [Op.or]: [
+            { title: { [Op.substring]: query } },
+            { genre: { [Op.substring]: query } },
+            { year: { [Op.substring]: query } },
+            { author: { [Op.substring]: query } }
+          ]
+        },
+        order: [["title", "ASC"]],
+        limit: booksPerPage,
+        offset: (currentPage - 1) * booksPerPage
+      });
+    } catch (err) {
+      throw err;
+    }
+  };
 
   return Book;
 };
-
-// }, {
-//     classMethods: {
-//       associate: function(models){
-//         //associates can be defined here
-//       }
-//     },
-//     instanceMethods: {
-//       publishedAt: function() {
-//         return dateFormat(this.createdAt, "dddd, mmmm dS, yyyy, h:MM TT");
-//       },      
-//       shortDescription: function(){ 
-//         return this.body.length > 30 ? this.body.substr(0, 30) + "..." : this.body;
-//       }
-//     }
-//   });
-  // Book.associate = function(models) {
-  //   // associations can be defined here
-  // };
-//   return Book;
-// };
